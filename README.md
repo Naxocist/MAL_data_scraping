@@ -1,2 +1,4 @@
-# myanimelist_web_scraping
-Scraping web data for my discord bot
+# My Anime List [MAL] data scraping
+
+This all data will be used in my discrod_bot project [CRINGE]
+
