@@ -1,12 +1,11 @@
 from bs4 import BeautifulSoup
 from gevent import monkey as curious_george
+
 curious_george.patch_all(thread=False, select=False)
 import requests
 import grequests
 import csv
-import asyncio
-import aiohttp
-
+import math
 
 animes_name = []
 animes_episode = []
@@ -15,85 +14,49 @@ animes_link = []
 animes_pic = []
 animes_season = []
 animes_genre = []
-p = 1
-i = 1
-end = 0
-genre_html = requests.get('https://myanimelist.net/anime.php').text
-soup_g = BeautifulSoup(genre_html, 'lxml')
-genres = [i['href'] for i in soup_g.find_all('a', class_='genre-name-link')]
-
-for i, j in enumerate(genres):
-    if 'Yuri' in j:
-        end = i + 1
-genres = genres[:end]
-print(genres)
-
-# async def fetch(url, session):
-#     async with session.get(url) as response:
-#         html = await response.read()
-#         return html
-#
-#
-# async def main():
-#     global p
-#     urls = []
-#
-#     async with aiohttp.ClientSession() as session:
-#         for g in genres:
-#             while True:
-#                 url = 'https://myanimelist.net' + g + f"?page={p}"
-#                 fet = await fetch(url, session)
-#                 html = fet.decode()
-#                 if html.find("link-title") == -1:
-#                     break
-#                 # tasks.append(asyncio.create_task(fetch(url, session)))
-#                 print(url)
-#                 urls.append(url)
-#                 p += 1
-#             p = 1
-#
-#     return urls
-#
-# urls = asyncio.run(main())
-
-
-def fetch_data_check(url):
-    req = requests.get(url).text
-    error = BeautifulSoup(req, 'lxml').text
-    return False if "404 Not Found" in error else True
-
-
 urls = []
-for g in genres:
-    while True:
-        url = f'https://myanimelist.net{g}?page={p}'
-        if not fetch_data_check(url):
-            break
-        print(url)
-        urls.append(url)
-        p += 1
-    p = 1
 
-print(urls)
+end = 0
+
+catogories = requests.get('https://myanimelist.net/anime.php').text
+soup_g = BeautifulSoup(catogories, 'lxml')
+
+genre_group = soup_g.find_all('a', class_='genre-name-link')
+genres = [i['href'] for i in genre_group]
+del genres[43:]
+
+quantities = [q.text for q in genre_group]
+del quantities[43:]
+for i, j in enumerate(quantities):
+    quantities[i] = math.ceil(int(j[j.index("(") + 1:-1].replace(',', '')) / 100)
+
+pair = {d: quantities[i] for i, d in enumerate(genres)}
+
+for k, v in pair.items():
+    for i in range(1, v+1):
+        url = "https://myanimelist.net" + k + f"?page={i}"
+        urls.append(url)
 
 rs = (grequests.get(u) for u in urls)
 resp = grequests.map(rs)
-print(resp)
+print(len(urls))
 for r in resp:  # Through all links (each page of genre)
-        soup = BeautifulSoup(r.text, 'lxml')
-        name_tag = soup.find_all('a', class_='link-title')
+    print("I'm here")
 
-        if name_tag is None:
-            break
-        for data in name_tag:
-            name = data.text
-            link = data['href']
-            if name in animes_name:
-                continue
-            animes_name.append(name)
-            animes_link.append(link)
-            print(name)
-            print(link)
+    soup = BeautifulSoup(r.text, 'lxml')
+    name_tag = soup.find_all('a', class_='link-title')
+    print(name_tag)
+    if name_tag is None:
+        break
+    for data in name_tag:
+        name = data.text
+        link = data['href']
+        if name in animes_name:
+            continue
+        animes_name.append(name)
+        animes_link.append(link)
+        print(name)
+        print(link)
 
 print("Finished Scraping")
 print("There are", len(animes_name), "animes")
@@ -103,7 +66,7 @@ response = grequests.map(requests)
 for r in response:  # grab other information
     soup = BeautifulSoup(r.text, 'lxml')
     pic = soup.find('img', itemprop="image")
-    season = soup.ftind('span', class_="information season")
+    season = soup.find('span', class_="information season")
     rank = soup.find('span', class_="numbers ranked")
     episode = soup.find('span', id="curEps")
     if pic is None:
