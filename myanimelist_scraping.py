@@ -84,6 +84,7 @@ async def main(u: list):  # main async function
     sem = asyncio.Semaphore(50)  # task grouping
     async with aiohttp.ClientSession() as session:
         tasks = [asyncio.create_task(semaphore(session, url, sem)) for url in u]
+        time.sleep(5)
         await asyncio.gather(*tasks)
 
 
@@ -91,6 +92,7 @@ async def fetch_other(u: list):
     sem = asyncio.Semaphore(50)
     async with aiohttp.ClientSession() as session:
         tasks = [asyncio.create_task(alt_semaphore(session, url, sem)) for url in u]
+        time.sleep(5)
         await asyncio.gather(*tasks)
 
 
