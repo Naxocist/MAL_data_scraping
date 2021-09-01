@@ -36,38 +36,21 @@ for k, v in pair.items():
         url = "https://myanimelist.net" + k + f"?page={i}"
         urls.append(url)
 
-print(urls)
-
 
 async def name_link(session, url):
     async with session.get(url) as resp:
         response = await resp.text()
+        print("scraping:", url)
         s = BeautifulSoup(response, 'html.parser')
-        data = s.find_all('a', class_='link-title')
-        for index in data:
-            name = index.text
-            link = index['href']
-            if name in animes_name:
-                continue
-            animes_name.append(name)
-            animes_link.append(link)
-            print(url)
+        return s
 
 
 async def other_info(session, url):  # fetch other information
     async with session.get(url) as resp:
-        print("Scraped:", url)
         response = await resp.text()
+        print("scraping anime:", url)
         s = BeautifulSoup(response, 'html.parser')
-        p = s.find('img', itemprop="image")
-        e = s.find('span', id="curEps")
-        s = s.find('span', class_="information season")
-        p = "" if p is None else p['data-src']
-        e = "" if e is None else e.text
-        s = "" if s is None else s.text
-        animes_pic.append(p)
-        animes_episode.append(e)
-        animes_season.append(s)
+        return s
 
 
 async def semaphore(session, url, sem):
@@ -81,36 +64,49 @@ async def alt_semaphore(session, url, sem):
 
 
 async def main(u: list):  # main async function
-    sem = asyncio.Semaphore(50)  # task grouping
+    sem = asyncio.Semaphore(100)  # task grouping
     async with aiohttp.ClientSession() as session:
         tasks = [asyncio.create_task(semaphore(session, url, sem)) for url in u]
-        time.sleep(5)
-        await asyncio.gather(*tasks)
+        time.sleep(1)
+        return await asyncio.gather(*tasks)
 
 
 async def fetch_other(u: list):
-    sem = asyncio.Semaphore(50)
+    sem = asyncio.Semaphore(100)
     async with aiohttp.ClientSession() as session:
         tasks = [asyncio.create_task(alt_semaphore(session, url, sem)) for url in u]
-        time.sleep(5)
-        await asyncio.gather(*tasks)
+        time.sleep(1)
+        return await asyncio.gather(*tasks)
 
 
 # urls = ["https://myanimelist.net/anime/genre/1/Action"]
 
-asyncio.get_event_loop().run_until_complete(main(urls))
-
-with open('animes_link.txt', mode='w', encoding='utf-8') as l:
-    l.write("Backup animes_list\n")
-    l.write("l = [")
-    for i in animes_link:
-        l.write(f"\'{i}\',")
-    l.write("]")
+result = asyncio.get_event_loop().run_until_complete(main(urls))
+for r in result:
+    data = r.find_all('a', class_='link-title')
+    for index in data:
+        name = index.text
+        link = index['href']
+        if name in animes_name:
+            continue
+        animes_name.append(name)
+        animes_link.append(link)
+        print(name, link)
 
 print("Done scraping + Add to txt file")
 print("There are", len(animes_name), "animes")
 
-asyncio.get_event_loop().run_until_complete(fetch_other(animes_link))
+result = asyncio.get_event_loop().run_until_complete(fetch_other(animes_link))
+for r in result:
+    p = r.find('img', itemprop="image")
+    e = r.find('span', id="curEps")
+    s = r.find('span', class_="information season")
+    p = "" if p is None else p['data-src']
+    e = "" if e is None else e.text
+    s = "" if s is None else s.text
+    animes_pic.append(p)
+    animes_episode.append(e)
+    animes_season.append(s)
 
 print("name: ", animes_name)
 print("link: ", animes_link)
