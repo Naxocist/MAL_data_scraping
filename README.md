@@ -1,5 +1,5 @@
-# My Anime List [MAL] data scraping
+# My Anime List [MAL] data scraping for discord_cringe_bot project
 
-This all data will be used in my discrod_bot project [CRINGE]
+## Even though there are bunch of myanimelist apis out there. I prefer doing it all by myself.
+*This scraping might be slow due to https://myanimelist.net server restricted.
 
-Even though there are bunch of myanimelist apis out there. I prefer doing it all by myself.
