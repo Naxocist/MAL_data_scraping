@@ -25,12 +25,10 @@ for i, j in enumerate(quantities):
 
 pair = {"https://myanimelist.net" + d: quantities[i] for i, d in enumerate(genres)}
 
-for k, v in pair.items():
+for k, v in pair.items():  # declare each genre's number pages
     urls.extend([k + f"?page={i}" for i in range(1, v+1)])
 
 print(urls)
-
-# urls = urls[:1]
 
 
 async def fetch(session, url):
@@ -45,16 +43,11 @@ async def main(urls):
 
         task = [fetch(session, url) for url in urls]
         return await asyncio.gather(*task)
-
-# for i in range(len(urls)):
-#
-#     link_temp = []
-#     url = urls[:1]
-
-    # print(url)
+    
+    
 name_link = asyncio.get_event_loop().run_until_complete(main(urls))
 
-for nl in name_link:
+for nl in name_link:  # get names and links of all animes
     html = BeautifulSoup(nl, 'html.parser')
     data = html.find_all('a', class_='link-title')
     for d in data:
@@ -72,7 +65,7 @@ print("There are", len(animes_name), "animes")
 
 other_info = asyncio.get_event_loop().run_until_complete(main(animes_link))
 
-for index, r in enumerate(other_info):
+for index, r in enumerate(other_info):  # get other information reference from links of animes
     print(index + 1)
     html = BeautifulSoup(r, 'html.parser')
     p = html.find('img', itemprop="image")
@@ -87,18 +80,8 @@ for index, r in enumerate(other_info):
     animes_episode.append(ep)
     animes_season.append(season)
     print(picture, ep, season)
-    # del urls[0]
-    # print("Break for 5 minutes")
-    # time.sleep(300)
 
-print("name: ", animes_name)
-print("link: ", animes_link)
-print("pic: ", animes_pic)
-print("season: ", animes_season)
-print("ep: ", animes_episode)
-print("rank: ", animes_rank)
-
-with open('animes.csv', 'w', encoding="utf8", newline='') as f:
+with open('animes.csv', 'w', encoding="utf8", newline='') as f:  # Write to csv file
     writer = csv.writer(f)
     writer.writerow(['name', 'episode', 'link', 'pic', 'season', 'genre'])
     for i in range(len(animes_name)):
