@@ -7,7 +7,7 @@ import asyncio
 import time
 
 animes_name, animes_episode, animes_rank, animes_link, animes_pic, animes_season, \
-    animes_season, urls = [[] for _ in range(8)]
+    animes_genre, urls = [[] for _ in range(8)]
 
 req = requests.get('https://myanimelist.net/anime.php').text
 soup_g = BeautifulSoup(req, 'lxml')
@@ -25,9 +25,10 @@ for i, j in enumerate(quantities):
 
 pair = {"https://myanimelist.net" + d: quantities[i] for i, d in enumerate(genres)}
 
-for k, v in pair.items():  # declare each genre's number pages
+for k, v in pair.items():
     urls.extend([k + f"?page={i}" for i in range(1, v+1)])
 
+urls = urls[:1]
 print(urls)
 
 
@@ -43,11 +44,11 @@ async def main(urls):
 
         task = [fetch(session, url) for url in urls]
         return await asyncio.gather(*task)
-    
-    
+
+
 name_link = asyncio.get_event_loop().run_until_complete(main(urls))
 
-for nl in name_link:  # get names and links of all animes
+for nl in name_link:
     html = BeautifulSoup(nl, 'html.parser')
     data = html.find_all('a', class_='link-title')
     for d in data:
@@ -65,25 +66,39 @@ print("There are", len(animes_name), "animes")
 
 other_info = asyncio.get_event_loop().run_until_complete(main(animes_link))
 
-for index, r in enumerate(other_info):  # get other information reference from links of animes
+for index, value in enumerate(other_info):
     print(index + 1)
-    html = BeautifulSoup(r, 'html.parser')
+    html = BeautifulSoup(value, 'html.parser')
     p = html.find('img', itemprop="image")
     e = html.find('span', id="curEps")
     s = html.find('span', class_="information season")
-
+    g = html.find_all('span', itemprop="genre")
+    r = html.find('span', class_="numbers ranked")
     picture = p['data-src'] if p is not None else ""
     ep = e.text if e is not None else ""
-    season = s.text if s is not None else ""
+    season = s.text if s is not None else "not specified"
+    genre = " ".join([i.text for i in g])
+    rank = r.text[r.text.index("#")+1:] if r is not None else "N/A"
 
     animes_pic.append(picture)
     animes_episode.append(ep)
     animes_season.append(season)
-    print(picture, ep, season)
+    animes_genre.append(genre)
+    animes_rank.append(rank)
+    print(picture, ep, season, genre, rank)
 
-with open('animes.csv', 'w', encoding="utf8", newline='') as f:  # Write to csv file
+
+print("name: ", animes_name)
+print("link: ", animes_link)
+print("pic: ", animes_pic)
+print("season: ", animes_season)
+print("ep: ", animes_episode)
+print("genre: ", animes_genre)
+print("rank: ", animes_rank)
+
+with open('animes.csv', 'w', encoding="utf8", newline='') as f:
     writer = csv.writer(f)
-    writer.writerow(['name', 'episode', 'link', 'pic', 'season', 'genre'])
+    writer.writerow(['name', 'episode', 'link', 'pic', 'season', 'genre', 'rank'])
     for i in range(len(animes_name)):
         writer.writerow([animes_name[i], animes_episode[i], animes_link[i], animes_pic[i],
-                         animes_season[i]])
+                         animes_season[i], animes_genre[i], animes_rank[i]])
