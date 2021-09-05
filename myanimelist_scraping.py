@@ -4,7 +4,7 @@ import csv
 import math
 import aiohttp
 import asyncio
-
+import time
 
 def generate_urls():
     urls = []
@@ -36,7 +36,6 @@ async def fetch(session, url):
         print("Tracking:", track)
         print(url)
         response = await request.text()
-
         return response
 
 
@@ -56,7 +55,6 @@ def process_names_link(data):
     for i, nl in enumerate(data):
         html = BeautifulSoup(nl, 'html.parser')
         data = html.find_all('a', class_='link-title')  # list of a tag of anime names
-
         for d in data:
             name = d.text
             link = d['href']
@@ -99,16 +97,30 @@ def process_other_info(data):
 if __name__ == '__main__':
     animes_name, animes_episode, animes_rank, animes_link, animes_pic, animes_season, \
         animes_genre = [[] for _ in range(7)]
+    track = 0
     urls = generate_urls()
     # urls = ['https://myanimelist.net/anime/genre/1/Action']
-    track = 0
+
     name_link = asyncio.get_event_loop().run_until_complete(main(urls))
     process_names_link(name_link)
+    print("There are", len(animes_name), "animes")
+    alt_animes_link = animes_link
 
-    print("There are", len(animes_link), "animes")
-    track = 0
-    other_info = asyncio.get_event_loop().run_until_complete(main(animes_link))  # Has the most probability to crash
-    process_other_info(other_info)
+    chunk = 150  # divide to each chunk
+    cycle = math.ceil(len(alt_animes_link)/chunk)  # define round in for loop
+    print("Round:", cycle)
+    for i in range(cycle):  # Has the most chance to crash
+        temp = alt_animes_link[:chunk] if len(alt_animes_link) >= chunk else alt_animes_link
+
+        other_info = asyncio.get_event_loop().run_until_complete(main(temp))
+        process_other_info(other_info)
+
+        del alt_animes_link[:chunk]
+        print("Length of alt_animes_link:", len(alt_animes_link))  # should decrease 150
+        print("Cool down for 300 seconds.....")
+        time.sleep(300)
+
+    print("alt_animes_link:", alt_animes_link)  # must be []
 
     with open('animes.csv', 'w', encoding="utf8", newline='') as f:
         writer = csv.writer(f)
