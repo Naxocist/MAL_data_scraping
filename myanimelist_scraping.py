@@ -63,6 +63,7 @@ def process_names_link(data):
 
             animes_name.append(name)
             animes_link.append(link)
+            alt_animes_link.append(link)
         print("Page", i + 1, "out of", len(name_link))
 
 
@@ -96,31 +97,38 @@ def process_other_info(data):
 
 if __name__ == '__main__':
     animes_name, animes_episode, animes_rank, animes_link, animes_pic, animes_season, \
-        animes_genre = [[] for _ in range(7)]
+        animes_genre, alt_animes_link = [[] for _ in range(8)]
     track = 0
     urls = generate_urls()
     # urls = ['https://myanimelist.net/anime/genre/1/Action']
 
-    name_link = asyncio.get_event_loop().run_until_complete(main(urls))
+    name_link = asyncio.get_event_loop().run_until_complete(main(urls))  # scrape all names, links in HTML
     process_names_link(name_link)
     print("There are", len(animes_name), "animes")
-    alt_animes_link = animes_link
 
-    chunk = 150  # divide to each chunk
+    track = 0
+    chunk = 150
     cycle = math.ceil(len(alt_animes_link)/chunk)  # define round in for loop
-    print("Round:", cycle)
-    for i in range(cycle):  # Has the most chance to crash
+
+    for c in range(cycle):  # Has the most chance to crash
         temp = alt_animes_link[:chunk] if len(alt_animes_link) >= chunk else alt_animes_link
 
-        other_info = asyncio.get_event_loop().run_until_complete(main(temp))
+        other_info = asyncio.get_event_loop().run_until_complete(main(temp))  # scrape other information in HTML
         process_other_info(other_info)
 
-        del alt_animes_link[:chunk]
-        print("Length of alt_animes_link:", len(alt_animes_link))  # should decrease 150
+        alt_animes_link[:chunk] = []
+        print("Scape:", len(animes_name) - len(alt_animes_link), "out of", len(animes_name))
         print("Cool down for 300 seconds.....")
         time.sleep(300)
 
     print("alt_animes_link:", alt_animes_link)  # must be []
+    print("Len animes_name: ", len(animes_name))
+    print("Len animes_episode", len(animes_episode))
+    print("Len animes_link", len(animes_link))
+    print("Len animes_pic", len(animes_pic))
+    print("Len animes_season", len(animes_season))
+    print("Len animes_genre", len(animes_genre))
+    print("Len animes_rank", len(animes_rank))
 
     with open('animes.csv', 'w', encoding="utf8", newline='') as f:
         writer = csv.writer(f)
